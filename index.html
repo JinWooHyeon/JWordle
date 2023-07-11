@@ -1,13 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wordle</title>
-    <link rel="stylesheet" href="./src/style.css"/>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>JWordle</title>
+
+	<!-- S : toastify-js -->
+	<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+	<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+	<!-- E : toastify-js -->
+	
+	<!-- S : js -->
+	<script src="./src/js/comm.js"></script>
+	<script src="./src/js/index.js" type="module"></script>
+	<!-- E : js -->
+
+	<!-- S : css -->
+	<link rel="stylesheet" href="./src/css/color.css">
+	<link rel="stylesheet" href="./src/css/layout.css">
+	<link rel="stylesheet" href="./src/css/animation.css">
+	<!-- E : css -->
 </head>
-<body>
-    <div id="game"></div>
-    <script src="./src/index.js" type="module"></script>
+<body class="dark">
+	<div id="wrapper">
+		<header class="header">
+			<div class="header_module start"></div>
+			<div class="header_module title">JWordle</div>
+			<div class="header_module end">
+				<button type="button" id="statistics-button" class="icon" aria-label="Statistics">
+					<svg xmlns="http://www.w3.org/2000/svg" height="28" viewBox="4 4 24 24" width="28" class="game-icon" data-testid="icon-statistics">
+						<path fill="var(--color-tone-1)" d="M20.6666 14.8333V5.5H11.3333V12.5H4.33325V26.5H27.6666V14.8333H20.6666ZM13.6666 7.83333H18.3333V24.1667H13.6666V7.83333ZM6.66659 14.8333H11.3333V24.1667H6.66659V14.8333ZM25.3333 24.1667H20.6666V17.1667H25.3333V24.1667Z"></path>
+					</svg>
+				</button>
+			</div>
+		</header>
+		<div class="game">
+			<div class="boardContainer">
+				<div id="board" class="board" style="width: 350px;height: 420px;"></div>
+			</div>
+		</div>
+	</div>
 </body>
 </html>

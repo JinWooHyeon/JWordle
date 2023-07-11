@@ -1,0 +1,188 @@
+/* Global Styles & Colors */
+:root {
+  --green: #6aaa64;
+  --darkendGreen: #538d4e;
+  --yellow: #c9b458;
+  --darkendYellow: #b59f3b;
+  --spellingBeeYellow: #f7da21;
+  --lightGray: #d3d6da;
+  --gray: #86888a;
+  --gray-2: #dcdcdc;
+  --gray-3: #dfdfdf;
+  --gray-4: #cccccc;
+  --darkGray: #939598;
+  --white: #fff;
+  --black: #212121;
+  --black-2: #121212;
+  --black-3: #363636;
+  --black-4: #cfcfcf;
+  --blue-2: #477aaa;
+  --blue-5: #4f85e5;
+  /* Colorblind colors */
+  --orange: #f5793a;
+  --blue: #85c0f9;
+  --outlineBlue: #2671dc;
+  --linkBlue: #477aaa;
+  font-family: 'Clear Sans', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 16px;
+  --header-height: 40px;
+  --header-padding-x: 16px;
+  --keyboard-height: 200px;
+  --game-max-width: 500px;
+
+  --error-z-index: 500;
+  --toast-z-index: 1000;
+  --modal-z-index: 2000;
+  --page-z-index: 3000;
+  --system-toast-z-index: 4000;
+  --horizontal-warning-z-index: 5000;
+
+  /* sb-promo */
+  --promo-icon-height: 40px;
+  --promo-icon-width: 40px;
+  --promo-icon-padding: 0px;
+  --svg-arrow-fill: white;
+  --svg-arrow-stroke: black;
+  --svg-arrow-fill-hover: black;
+  --svg-arrow-stroke-hover: white;
+
+  /* auth sb-promo */
+  --spelling-bee-promo: url('https://www.nytimes.com/games-assets/v2/assets/wordle/nav-icons/SpellingBee-Icon-Normalized.svg');
+}
+
+/* Light theme colors */
+:root {
+  --color-tone-1: #000000;
+  --color-tone-2: #787c7e;
+  --color-tone-3: #878a8c;
+  --color-tone-4: #d3d6da;
+  --color-tone-5: #edeff1;
+  --color-tone-6: #f6f7f8;
+  --color-tone-7: #ffffff;
+  --color-tone-8: #121212;
+  --color-tone-9: #dfdfdf;
+  --color-tone-10: #000000;
+  --color-tone-11: #787c7e;
+  --color-tone-12: #363636;
+  --color-nav-hover: #f4f4f4;
+  --opacity-50: rgba(255, 255, 255, 0.5);
+  --error-background: #e3e3e1;
+  --icon-disabled: #a6a6a6;
+}
+
+/* Dark Theme Colors */
+.dark {
+  --color-tone-1: #ffffff;
+  --color-tone-2: #818384;
+  --color-tone-3: #565758;
+  --color-tone-4: #3a3a3c;
+  --color-tone-5: #272729;
+  --color-tone-6: #1a1a1b;
+  --color-tone-7: #121213;
+  --color-tone-8: #ffffff;
+  --color-tone-9: #424242;
+  --color-tone-10: #dfdfdf;
+  --color-tone-11: #dfdfdf;
+  --color-tone-12: #dfdfdf;
+  --color-nav-hover: #2f2f31;
+  --opacity-50: rgba(0, 0, 0, 0.5);
+  --error-background: var(--color-tone-7);
+  --icon-disabled: #59595a;
+  
+  /* dark mode sb-promo */
+  --promo-icon-height: 27px;
+  --promo-icon-width: 27px;
+  --promo-icon-bg-size: 35px;
+  --promo-icon-padding: 4px;
+  --promo-icon-height: 40px;
+  --promo-icon-width: 40px;
+  --promo-icon-padding: 0px;
+  --svg-arrow-fill: var(--color-tone-7);
+  --svg-arrow-stroke: white;
+  --svg-arrow-fill-hover: white;
+  --svg-arrow-stroke-hover: black;
+}
+
+/* Constant colors and colors derived from theme */
+:root,
+.dark {
+  --color-background: var(--color-tone-7);
+}
+
+:root {
+  --color-present: var(--yellow);
+  --color-correct: var(--green);
+  --color-absent: var(--color-tone-2);
+  --card-text-color: var(--color-tone-7);
+  --key-text-color: var(--color-tone-1);
+  --key-evaluated-text-color: var(--color-tone-7);
+  --key-bg: var(--color-tone-4);
+  --key-bg-present: var(--color-present);
+  --key-bg-correct: var(--color-correct);
+  --key-bg-absent: var(--color-absent);
+  --modal-content-bg: var(--color-tone-7);
+  --outline-focus: var(--outlineBlue);
+}
+
+.dark {
+  --color-present: var(--darkendYellow);
+  --color-correct: var(--darkendGreen);
+  --color-absent: var(--color-tone-4);
+  --card-text-color: var(--color-tone-1);
+  --key-text-color: var(--color-tone-1);
+  --key-evaluated-text-color: var(--color-tone-1);
+  --key-bg: var(--color-tone-2);
+  --key-bg-present: var(--color-present);
+  --key-bg-correct: var(--color-correct);
+  --key-bg-absent: var(--color-absent);
+  --modal-content-bg: var(--color-tone-7);
+}
+
+.colorblind {
+  --color-correct: var(--orange);
+  --color-present: var(--blue);
+  --card-text-color: var(--white);
+  --key-bg-present: var(--color-present);
+  --key-bg-correct: var(--color-correct);
+  --key-bg-absent: var(--color-absent);
+}
+
+html {
+  height: 100%;
+}
+
+body {
+  height: 100%;
+  background-color: var(--color-background);
+  margin: 0;
+  padding: 0;
+  /* Prevent scrollbar appearing on page transition */
+  overflow-y: hidden;
+  &.scrollable {
+    overflow-y: unset;
+  }
+}
+
+html,
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Responsive styles */
+@media (min-width: 415px) {
+  :root {
+    --header-height: 65px;
+  }
+}
+@media (min-width: 1024px) {
+  :root {
+    --header-padding-x: 24px;
+  }
+}
+
+@media (min-width: 768px) {
+  :root {
+    --header-padding-x: 20px;
+  }
+}
