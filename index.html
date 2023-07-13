@@ -5,6 +5,10 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>JWordle</title>
 
+	<!-- S : jquery -->
+	<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+	<!-- E : jquery -->
+
 	<!-- S : toastify-js -->
 	<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 	<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
@@ -12,7 +16,9 @@
 	
 	<!-- S : js -->
 	<script src="./src/js/comm.js"></script>
+	
 	<script src="./src/js/index.js" type="module"></script>
+	<script src="./src/js/dialog.js"></script>
 	<!-- E : js -->
 
 	<!-- S : css -->
@@ -22,6 +28,59 @@
 	<!-- E : css -->
 </head>
 <body class="dark">
+	<dialog id="statistics-dialog" class="modal" style="display: none;">
+		<div class="content">
+			<div class="dialog-head">
+				<h1 class="heading border-bottom">stats</h1>
+				<button class="closeIcon" formmethod="dialog">
+					<svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 0 24 24" width="20" class="game-icon" data-testid="icon-close">
+						<path fill="var(--color-tone-1)" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path>
+					</svg>
+				</button>
+			</div>
+			<section>
+				<div class="dialog-head">
+					<h1 class="heading">statistics</h1>
+				</div>
+				<div class="dialog-section">
+					<div class="statistics module">
+						<div class="statisticContainer">
+							<div id="playtime">00:24:39</div>
+							<div class="statistics label">playtime in this session</div>
+						</div>
+						<div class="statisticContainer">
+							<div id="winPlayCnt">2 / 50</div>
+							<div class="statistics label">win / played</div>
+						</div>
+						<div class="statisticContainer">
+							<div id="winrate">100%</div>
+							<div class="statistics label">win rate</div>
+						</div>
+					</div>
+				</div>
+			</section>
+			<section>
+				<div class="dialog-head">
+					<h1 class="heading">guess distribution</h1>
+				</div>
+				<div class="dialog-section">
+					<div class="distribution module">
+						<div class="distributionContainer">
+							1
+						</div>
+						<div class="distributionContainer">
+						</div>
+						<div class="distributionContainer">
+						</div>
+					</div>
+				</div>
+			</section>
+		</div>
+	</dialog>
+	<dialog id="settings-dialog" class="modal" style="display: none;">
+		<p>settings</p>
+		<button>OK</button>
+	</dialog>
 	<div id="wrapper">
 		<header class="header">
 			<div class="header_module start"></div>
@@ -30,6 +89,11 @@
 				<button type="button" id="statistics-button" class="icon" aria-label="Statistics">
 					<svg xmlns="http://www.w3.org/2000/svg" height="28" viewBox="4 4 24 24" width="28" class="game-icon" data-testid="icon-statistics">
 						<path fill="var(--color-tone-1)" d="M20.6666 14.8333V5.5H11.3333V12.5H4.33325V26.5H27.6666V14.8333H20.6666ZM13.6666 7.83333H18.3333V24.1667H13.6666V7.83333ZM6.66659 14.8333H11.3333V24.1667H6.66659V14.8333ZM25.3333 24.1667H20.6666V17.1667H25.3333V24.1667Z"></path>
+					</svg>
+				</button>
+				<button type="button" id="settings-button" class="icon" aria-label="Settings">
+					<svg xmlns="http://www.w3.org/2000/svg" height="28" viewBox="4 4 24 24" width="28" class="game-icon" data-testid="icon-settings">
+						<path fill="var(--color-tone-1)" d="M25.52 17.2534C25.5733 16.8534 25.6 16.44 25.6 16C25.6 15.5734 25.5733 15.1467 25.5067 14.7467L28.2133 12.64C28.4533 12.4534 28.52 12.0934 28.3733 11.8267L25.8133 7.40004C25.6533 7.10671 25.32 7.01338 25.0267 7.10671L21.84 8.38671C21.1733 7.88004 20.4667 7.45338 19.68 7.13338L19.2 3.74671C19.1467 3.42671 18.88 3.20004 18.56 3.20004H13.44C13.12 3.20004 12.8666 3.42671 12.8133 3.74671L12.3333 7.13338C11.5467 7.45338 10.8267 7.89338 10.1733 8.38671L6.98665 7.10671C6.69332 7.00004 6.35998 7.10671 6.19998 7.40004L3.65332 11.8267C3.49332 12.1067 3.54665 12.4534 3.81332 12.64L6.51998 14.7467C6.45332 15.1467 6.39998 15.5867 6.39998 16C6.39998 16.4134 6.42665 16.8534 6.49332 17.2534L3.78665 19.36C3.54665 19.5467 3.47998 19.9067 3.62665 20.1734L6.18665 24.6C6.34665 24.8934 6.67998 24.9867 6.97332 24.8934L10.16 23.6134C10.8267 24.12 11.5333 24.5467 12.32 24.8667L12.8 28.2534C12.8667 28.5734 13.12 28.8 13.44 28.8H18.56C18.88 28.8 19.1467 28.5734 19.1867 28.2534L19.6667 24.8667C20.4533 24.5467 21.1733 24.12 21.8267 23.6134L25.0133 24.8934C25.3067 25 25.64 24.8934 25.8 24.6L28.36 20.1734C28.52 19.88 28.4533 19.5467 28.2 19.36L25.52 17.2534ZM16 20.8C13.36 20.8 11.2 18.64 11.2 16C11.2 13.36 13.36 11.2 16 11.2C18.64 11.2 20.8 13.36 20.8 16C20.8 18.64 18.64 20.8 16 20.8Z"></path>
 					</svg>
 				</button>
 			</div>

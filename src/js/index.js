@@ -2,16 +2,16 @@
 
 console.log( '[Load index.js]' );
 
-const dictionary = [ 'earth', 'plane', 'crane', 'audio', 'house' ];
+const ls = localStorage;
 
-let isInputable = true;
 let boardLength = {
 	maxRowLen: 6
 	, wordLen: 5
 }
 
 let state = {
-	secret: dictionary[ Math.floor( Math.random() * dictionary.length ) ]
+	// secret: dictionary[ Math.floor( Math.random() * dictionary.length ) ]
+	secret: 'dolly'
 	, grid: Array( boardLength.maxRowLen )
 				.fill().map( () => Array( boardLength.wordLen ).fill( '' ) )
 	, currRowIdx: 0
@@ -19,11 +19,16 @@ let state = {
 	, winRowIdx: 0
 	, isWinner: false
 	, isGameOver: false
+	, isFin: false
+	, isInputable: true
 	, animation_duration: 500
 }
-const ls = localStorage;
 
-init();
+document.addEventListener( 'DOMContentLoaded', () => {
+	console.log( 'Start DOMContentLoaded' );
+
+	init();
+} );
 
 function init() {
 	console.log( 'Start JWordle' );
@@ -31,21 +36,16 @@ function init() {
 	const board = document.getElementById( 'board' );
 	// board.style = `grid-template-rows: repeat( ${boardLength.maxRowLen}, 1fr )`;
 
-	console.log( state.secret );
-
 	drawGrid( board, boardLength.maxRowLen, boardLength.wordLen );
 
 	if ( ls.getItem( 'snapshot' ) ) {
 		state = JSON.parse( ls.getItem( 'snapshot' ) );
 
-		console.log( state );
+		setPrevWords();
 	}
 
-	setPrevWords();
-
 	addKeyboardEventListener();
-
-	console.log( state.secret );
+	addDialogEventListener( state );
 }
 
 function drawGrid( board, maxRowLen, wordLen ) {
@@ -78,21 +78,19 @@ function drawCard( container, row, col, letter = '' ) {
 function setPrevWords() {
 	let word;
 
-	state.isWinner = false;
 	state.winRowIdx = 0;
+	state.isWinner = false;
+	state.isGameOver = false;
+	state.isFin = false;
 
 	updateGrid();
 
 	for ( let i = 0; i < state.currRowIdx; i++ ) {
 		setTimeout( () => {
-			word = '';
+			word = getWord( i );
 
-			for ( let j = 0; j < boardLength.wordLen; j++ ) {
-				word += state.grid[i][j];
-			}
-
-			revealWord( state.isWinner, i, word, 200 );
-		}, i * 100 );
+			revealWord( i, word, 200 );
+		}, ( i * 100 ) );
 	}
 }
 
@@ -100,43 +98,36 @@ function addKeyboardEventListener() {
 	document.body.onkeydown = ( e ) => {
 		const key = e.key;
 
-		if ( !isInputable ) {
+		if ( !state.isInputable ) {
 			return;
 		}
 
 		if ( 'Enter' === key ) {
-			const word = getCurrWord();
+			const word = getWord( state.currRowIdx );
 			const row = document.getElementById( `row${state.currRowIdx}` );
-			let isPass = true;
 			let textContent;
 
-			if ( ( 5 !== state.currColIdx ) || ( !isWordValid( word ) ) ) {
-				isPass = false; 
+			if ( boardLength.wordLen !== state.currColIdx ) {
+				textContent = 'Not enough letters';
 
-				if ( 5 !== state.currColIdx ) {
-					textContent = 'Not enough letters';
-				} else if ( !isWordValid( word ) ) {
-					textContent = 'Not in word list';
-				}
-			}
-
-			if ( !isPass ) {
-				drawToast( textContent );
-
-				row.classList.add( 'invalid' );
-				setTimeout( () => {
-					row.classList.remove( 'invalid' );
-				}, state.animation_duration );
-				
+				rejectWord( textContent, row );
 				return;
 			}
 
-			revealWord( state.isWinner, state.currRowIdx, word );
+			isWordValid( word )
+				.then( ( resp ) => {
+					revealWord( state.currRowIdx, word );
 
-			state.currRowIdx++;
-			state.currColIdx = 0;
+					state.currRowIdx++;
+					state.currColIdx = 0;
 
-			ls.setItem( 'snapshot', JSON.stringify( state ) );
+					ls.setItem( 'snapshot', JSON.stringify( state ) );
+				} )
+				.catch( ( err ) => {
+					textContent = 'Not in word list';
+
+					rejectWord( textContent, row );
+				} );
 		}
 
 		if ( 'Backspace' === key ) {
@@ -151,66 +142,96 @@ function addKeyboardEventListener() {
 	}
 }
 
-function getCurrWord() {
-	return state.grid[state.currRowIdx].reduce( ( prev, curr ) => prev + curr );
+function getWord( rowIdx ) {
+	// return state.grid[rowIdx].reduce( ( prev, curr ) => prev + curr );
+	return state.grid[rowIdx].join( '' );
+}
+
+function rejectWord( textContent, row ) {
+	drawToast( textContent );
+
+	row.classList.add( 'invalid' );
+	setTimeout( () => {
+		row.classList.remove( 'invalid' );
+	}, state.animation_duration );
 }
 
 function isWordValid( word ) {
-	return dictionary.includes( word );
+	return new Promise( ( resolve, reject ) => {
+		dictionary( word )
+			.then( ( resp ) => {
+				resolve( ( 0 !== resp.length ) );
+			} )
+			.catch( ( err ) => {
+				reject( false );
+			} );
+	} );
 }
 
-function revealWord( isWinner, rowIdx, guess, animation_duration = state.animation_duration ) {
-	let cardClass;
+function revealWord( rowIdx, guess, animation_duration = state.animation_duration ) {
+	state.isInputable = false;
 
-	isInputable = false;
+	updateRow( rowIdx, guess );
 
-	console.log( isWinner );
+	flipRow( rowIdx, animation_duration );
+}
 
+function updateRow( rowIdx, guess ) {
 	const row = document.getElementById( `row${rowIdx}` );
 
 	row.lastChild.addEventListener( 'animationend', ( e ) => {
-		isInputable = true;
+		updateState( rowIdx, guess );
+
+		state.isInputable = true;
 
 		if ( !e.target.classList.contains( 'win' ) ) {
-			drawFinish( isWinner, rowIdx );
+			drawFinish();
 		}
 	} );
+}
 
+function updateState( rowIdx, guess ) {
+	state.isWinner = ( state.secret === guess );
+	state.winRowIdx = ( state.isWinner ) ? ( state.currRowIdx - 1 ) : 0;
+	state.isGameOver = ( ( boardLength.maxRowLen - 1 ) === rowIdx );
+	state.isFin = ( state.isWinner || state.isGameOver );
+}
+
+function flipRow( rowIdx, animation_duration ) {
+	let dataState;
+	
 	for ( let i = 0; i < boardLength.wordLen; i++ ) {
 		const card = document.getElementById( `card${rowIdx}${i}` );
 		const letter = card.textContent;
 
 		setTimeout( () => {
 			if ( state.secret[i] === letter ) {
-				cardClass = 'correct';
+				dataState = 'correct';
 			} else if ( state.secret.includes( letter ) ) {
-				cardClass = 'present';
+				dataState = 'present';
 			} else {
-				cardClass = 'absent';
+				dataState = 'absent';
 			}
 
-			card.setAttribute( 'data-state', cardClass );
+			card.setAttribute( 'data-state', dataState );
 		}, ( ( i + 1 ) * animation_duration ) / 2 );
 
 		card.classList.add( 'flipped' );
 		card.style.animationDelay = `${ ( i * animation_duration ) / 2 }ms`;
 	}
-
-	state.isWinner = ( state.secret === guess );
-	state.winRowIdx = ( state.isWinner ) ? ( state.currRowIdx - 1 ) : 0;
-	state.isGameOver = ( ( boardLength.maxRowLen - 1 ) === state.currRowIdx );
 }
 
-function drawFinish( isWinner, winRowIdx ) {
+function drawFinish() {
 	let textFin;
 
-	console.log( isWinner );
-	console.log( winRowIdx );
-
 	if ( state.isWinner ) {
-		const winRow = document.getElementById( `row${winRowIdx}` );
+		const winRow = document.getElementById( `row${state.winRowIdx}` );
 
 		winRow.childNodes.forEach( ( e ) => {
+			const rowIdx = e.id.replace( `card${state.winRowIdx}`, '' );
+
+			e.style.animationDelay = `${ ( rowIdx * 100 ) }ms`;
+
 			e.classList.remove( 'flipped' );
 			e.classList.add( 'win' );
 		} );
@@ -220,7 +241,7 @@ function drawFinish( isWinner, winRowIdx ) {
 		textFin = `Better luck next time! The word was ${state.secret}.`;
 	}
 
-	if ( state.isWinner || state.isGameOver ) {
+	if ( state.isFin ) {
 		drawToast( textFin, 0 );
 	}
 }
