@@ -521,12 +521,59 @@
 	&.norepeat {
 		grid-template-rows: none;
 	}
-}
 
-.row {
-	display: grid;
-	grid-template-columns: repeat( 5, 1fr );
-	grid-gap: 5px;
+	.row {
+		display: grid;
+		grid-template-columns: repeat( 5, 1fr );
+		grid-gap: 5px;
+
+		&.norepeat {
+			grid-template-columns: none;
+		}
+
+		.card {
+			width: 100%;
+			display: inline-flex;
+			justify-content: center;
+			align-items: center;
+			font-size: 2rem;
+			line-height: 1;
+			font-weight: bold;
+			vertical-align: middle;
+			box-sizing: border-box;
+			color: var( --card-text-color );
+			text-transform: uppercase;
+		
+			&.url {
+				height: 30px;
+				font-size: 16px;
+				text-transform: none;
+			}
+		}
+		.card::before {
+			content: '';
+			display: inline-block;
+			padding-bottom: 100%;
+		}
+		
+		.card[data-state='empty'] {
+			border: 2px solid var( --color-tone-4 );
+		}
+		.card[data-state='tbd'] {
+			background-color: var( --color-tone-7 );
+			border: 2px solid var( --color-tone-3 );
+			color: var( --color-tone-1 );
+		}
+		.card[data-state='correct'] {
+			background-color: var( --color-correct );
+		}
+		.card[data-state='present'] {
+			background-color: var( --color-present );
+		}
+		.card[data-state='absent'] {
+			background-color: var( --color-absent );
+		}
+	}
 }
 
 .win {
@@ -534,50 +581,79 @@
 	animation-duration: 1000ms;
 }
 
-.card {
+
+
+.keyboard {
+	height: var(--keyboard-height);
+	margin: 0 8px;
+	user-select: none;
+}
+
+.row {
+	display: flex;
 	width: 100%;
-	display: inline-flex;
+	margin: 0 auto 8px;
+	/* https://stackoverflow.com/questions/46167604/ios-html-disable-double-tap-to-zoom */
+	touch-action: manipulation;
+}
+
+.key {
+	font-size: 1.25em;
+	font-weight: bold;
+	border: 0;
+	padding: 0;
+	margin: 0 6px 0 0;
+	height: 58px;
+	border-radius: 4px;
+	cursor: pointer;
+	user-select: none;
+	background-color: var(--key-bg);
+	color: var(--key-text-color);
+	flex: 1;
+	display: flex;
 	justify-content: center;
 	align-items: center;
-	font-size: 2rem;
-	line-height: 1;
-	font-weight: bold;
-	vertical-align: middle;
-	box-sizing: border-box;
-	color: var( --card-text-color );
 	text-transform: uppercase;
-
-	&.url {
-		height: 30px;
-		font-size: 16px;
-		text-transform: none;
+	-webkit-tap-highlight-color: rgba(0, 0, 0, 0.3);
+  
+	&:focus-visible {
+	  outline: 2px solid var(--outline-focus);
 	}
-}
-.card::before {
-	content: '';
-	display: inline-block;
-	padding-bottom: 100%;
-}
-
-.card[data-state='empty'] {
-	border: 2px solid var( --color-tone-4 );
-}
-.card[data-state='tbd'] {
-	background-color: var( --color-tone-7 );
-	border: 2px solid var( --color-tone-3 );
-	color: var( --color-tone-1 );
-}
-.card[data-state='correct'] {
-	background-color: var( --color-correct );
-}
-.card[data-state='present'] {
-	background-color: var( --color-present );
-}
-.card[data-state='absent'] {
-	background-color: var( --color-absent );
-}
-
-#keyboard {
-
-}
-
+  
+	&:last-of-type {
+	  margin: 0;
+	}
+  
+	&[data-state='correct'] {
+	  background-color: var(--key-bg-correct);
+	  color: var(--key-evaluated-text-color);
+	}
+  
+	&[data-state='present'] {
+	  background-color: var(--key-bg-present);
+	  color: var(--key-evaluated-text-color);
+	}
+  
+	&[data-state='absent'] {
+	  background-color: var(--key-bg-absent);
+	  color: var(--key-evaluated-text-color);
+	}
+  
+	&.fade {
+	  transition: background-color 0.1s ease, color 0.1s ease;
+	}
+  }
+  
+  .half {
+	flex: 0.5;
+  }
+  
+  .one {
+	flex: 1;
+  }
+  
+  .oneAndAHalf {
+	flex: 1.5;
+	font-size: 12px;
+  }
+  

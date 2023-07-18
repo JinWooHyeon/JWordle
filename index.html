@@ -85,8 +85,9 @@
 			<!-- E : game -->
 			<div class="game">
 				<div class="boardContainer">
-					<div id="board" class="board" style="width: 350px;height: 420px;"></div>
+					<div id="board" class="board" style="width: 350px;"></div>
 				</div>
+				<div class="keyboard"></div>
 			</div>
 			<!-- E : game -->
 		</div>
@@ -105,7 +106,7 @@
 				</div>
 				<section class="newWordle">
 					<div class="dialog-head">
-						<h1 class="heading">Input 5 letters</h1>
+						<h1 class="heading">Input 5 letters, but exists word in worlds</h1>
 					</div>
 					<div class="dialog-newWordle">
 						<div class="newWordle module">
@@ -122,7 +123,9 @@
 							</div>
 							<div class="boardContainer">
 								<div class="board norepeat" style="width: 350px;">
-									<div id="url" class="url card" data-state="empty"></div>
+									<div class="row norepeat">
+										<div id="url" class="url card" data-state="empty"></div>
+									</div>
 								</div>
 							</div>
 						</div>

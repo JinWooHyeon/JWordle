@@ -4,6 +4,8 @@ import { diagNewWordle, addHandlerDialog } from "./dialog.js";
 
 console.log( '[Load index.js]' );
 
+const wordState = [];
+
 export const secret = {
 	game: {
 		grid: Array( 1 )
@@ -49,6 +51,10 @@ export function resetState( keyName, value ) {
 	state[keyName]= value;
 }
 
+export let keyboardButtons = new Map();
+
+document.body.addEventListener( 'keydown', handleKeyDown );
+
 document.addEventListener( 'DOMContentLoaded', () => {
 	console.log( '[Start DOMContentLoaded]' );
 
@@ -60,7 +66,7 @@ document.addEventListener( 'DOMContentLoaded', () => {
 	
 	addHandlerStart();
 
-	addHandlerKeyboard();
+	addVirtualKeyboard();
 	addHandlerDialog( state );
 } );
 
@@ -140,125 +146,196 @@ function addHandlerStart() {
 			ls.setItem( state );
 		}
 	} );
+
+	const Board = function() {
+		console.log( '[Load Board]' );
+		
+		this.drawGrid = function() {
+			const board = document.getElementById( 'board' );
+			let row;
+		
+			if ( 0 !== board.children.length ) {
+				board.replaceChildren( '' );
+			}
+		
+			for ( let i = 0; i < boardLength.maxRowLen; i++ ) {
+				row = document.createElement( 'div' );
+				row.id = `row${i}`;
+				row.className = 'row';
+		
+				for ( let j = 0; j < boardLength.wordLen; j++ ) {
+					this.drawCard( row, i, j );
+				}
+		
+				board.appendChild( row );
+			}
+		}
+	
+		this.drawCard = function( container, row, col, letter = '' ) {
+			const card = document.createElement( 'div' );
+		
+			card.className = 'card';
+			card.id = `card${row}${col}`;
+			card.textContent = letter;
+			card.setAttribute( 'data-state', 'empty' );
+		
+			container.appendChild( card );
+		}
+	
+		this.setPrevWords = function() {
+			const currRowIdx = state.game.currRowIdx;
+			let word;
+		
+			state.game.wonRowIdx = 0;
+			state.game.isWinner = false;
+			state.game.isGameOver = false;
+			state.game.currRowIdx = 0;
+		
+			updateGrid();
+		
+			for ( let i = 0; i < currRowIdx; i++ ) {
+				setTimeout( () => {
+					word = getWord( i );
+		
+					revealWord( i, word, 200 );
+				}, ( i * 100 ) );
+			}
+		}
+	}
 }
 
-const Board = function() {
-	console.log( '[Load Board]' );
-	
-	this.drawGrid = function() {
-		const board = document.getElementById( 'board' );
-		let row;
-	
-		if ( 0 !== board.children.length ) {
-			board.replaceChildren( '' );
+function addVirtualKeyboard() {
+	const keyboard = document.querySelector( '.gameContainer .game .keyboard' );
+
+	const keyboardLayout = [
+		{ letters: 'qwertyuiop', idx: 0  }
+		, { letters: 'asdfghjkl', idx: 1  }
+		, { letters: 'zxcvbnm', idx: 2  }
+	];
+
+	for ( let rowIdx in keyboardLayout ) {
+		drawKeyboardRow( keyboard, keyboardLayout[rowIdx] );
+	}
+
+	function drawKeyboardRow( keyboard, rowInfo ) {
+		const row = document.createElement( 'div' );
+		row.className = 'row';
+
+		let letters = [ ...rowInfo.letters ];
+
+		if ( 1 === rowInfo.idx ) {			// mid row
+			letters = [' '].concat( letters );
+			letters = letters.concat( [' '] );
+		} else if ( 2 === rowInfo.idx ) {	// last row
+			const controlKeys = [ 'Enter', 'Backspace' ];
+
+			letters = [controlKeys[0]].concat( letters );
+			letters = letters.concat( [controlKeys[1]] );
 		}
-	
-		for ( let i = 0; i < boardLength.maxRowLen; i++ ) {
-			row = document.createElement( 'div' );
-			row.id = `row${i}`;
-			row.className = 'row';
-	
-			for ( let j = 0; j < boardLength.wordLen; j++ ) {
-				this.drawCard( row, i, j );
+
+		for ( const letter of letters ) {
+			if ( ' ' !== letter ) {
+				const button = document.createElement( 'button' );
+				button.className = 'key';
+				button.textContent = letter;
+				button.onclick = () => {
+					handleKey( letter );
+				};
+
+				button.setAttribute( 'data-key', letter );
+				button.setAttribute( 'aria-label', letter );
+
+				if ( 1 === letter.length ) {
+					keyboardButtons.set( letter, button );
+				} else {
+					button.classList.add( 'oneAndAHalf' );
+
+					if ( 'Backspace' === letter ) {
+						button.innerHTML  = '<img src="../src/icon/backspace.svg" />';
+					}
+				}
+				
+				row.appendChild( button );
+			} else {
+				const div = document.createElement( 'div' );
+
+				div.className = 'half';
+
+				row.appendChild( div );
 			}
-	
-			board.appendChild( row );
 		}
-	}
 
-	this.drawCard = function( container, row, col, letter = '' ) {
-		const card = document.createElement( 'div' );
-	
-		card.className = 'card';
-		card.id = `card${row}${col}`;
-		card.textContent = letter;
-		card.setAttribute( 'data-state', 'empty' );
-	
-		container.appendChild( card );
-	}
-
-	this.setPrevWords = function() {
-		const currRowIdx = state.game.currRowIdx;
-		let word;
-	
-		state.game.wonRowIdx = 0;
-		state.game.isWinner = false;
-		state.game.isGameOver = false;
-		state.game.currRowIdx = 0;
-	
-		updateGrid();
-	
-		for ( let i = 0; i < currRowIdx; i++ ) {
-			setTimeout( () => {
-				word = getWord( i );
-	
-				revealWord( i, word, 200 );
-			}, ( i * 100 ) );
-		}
+		keyboard.appendChild( row );
 	}
 }
 
-function addHandlerKeyboard() {
-	document.body.onkeydown = ( e ) => {
-		const key = e.key;
+function handleKeyDown( e ) {
+	if ( e.ctrlKey || e.metaKey || e.altKey ) {
+		return;
+	}
 
-		const contentWelcome = document.querySelector( '.contentWelcome' );
+	handleKey( e.key );
+}
 
-		if ( !state.game.isInputable ) {
-			return;
-		} else if ( !diagNewWordle.open && contentWelcome.classList.contains( 'active' ) ) {
+function handleKey( letter ) {
+	const key = letter;
+
+	const contentWelcome = document.querySelector( '.contentWelcome' );
+
+	if ( !state.game.isInputable ) {
+		return;
+	} else if ( !diagNewWordle.open && contentWelcome.classList.contains( 'active' ) ) {
+		return;
+	}
+
+	if ( 'Enter' === key ) {
+		if ( !state.game.isFin ) {
+			state.game.isInputable = false;
+		}
+
+		const whichState = ( diagNewWordle.open ) ? secret : state;
+		const whichID = `${( diagNewWordle.open ) ? 's' : '' }row`;
+
+		const word = getWord( whichState.game.currRowIdx );
+		const row = document.getElementById( `${whichID}${whichState.game.currRowIdx}` );
+		let textContent;
+
+		if ( boardLength.wordLen !== whichState.game.currColIdx ) {
+			textContent = 'Not enough letters';
+
+			rejectWord( textContent, row );
+
+			state.game.isInputable = true;
+
 			return;
 		}
 
-		if ( 'Enter' === key ) {
-			if ( !state.game.isFin ) {
-				state.game.isInputable = false;
-			}
-
-			const whichState = ( diagNewWordle.open ) ? secret : state;
-			const whichID = `${( diagNewWordle.open ) ? 's' : '' }row`;
-
-			const word = getWord( whichState.game.currRowIdx );
-			const row = document.getElementById( `${whichID}${whichState.game.currRowIdx}` );
-			let textContent;
-
-			if ( boardLength.wordLen !== whichState.game.currColIdx ) {
-				textContent = 'Not enough letters';
+		isWordValid( word )
+			.then( ( resp ) => {
+				if ( !diagNewWordle.open ) {
+					revealWord( whichState.game.currRowIdx, word, whichState.game.animation_duration );
+				} else {
+					setUrlCard( word );
+				}
+			} )
+			.catch( ( err ) => {
+				textContent = 'Not in word list';
 
 				rejectWord( textContent, row );
 
 				state.game.isInputable = true;
-
-				return;
-			}
-
-			isWordValid( word )
-				.then( ( resp ) => {
-					if ( !diagNewWordle.open ) {
-						revealWord( whichState.game.currRowIdx, word, whichState.game.animation_duration );
-					} else {
-						setUrlCard( word );
-					}
-				} )
-				.catch( ( err ) => {
-					textContent = 'Not in word list';
-
-					rejectWord( textContent, row );
-
-					state.game.isInputable = true;
-				} );
-		}
-
-		if ( 'Backspace' === key ) {
-			removeLetter();
-		}
-
-		if ( isLetter( key ) ) {
-			addLetter( key.toLowerCase() );
-		}
-
-		updateGrid();
+			} );
 	}
+
+	if ( 'Backspace' === key ) {
+		removeLetter();
+	}
+
+	if ( isLetter( key ) ) {
+		addLetter( key.toLowerCase() );
+	}
+
+	updateGrid();	
 
 	function setUrlCard( word ) {
 		// generate url with encrypted wordle
@@ -363,8 +440,10 @@ function revealWord( rowIdx, guess, animation_duration ) {
 	function flipRow( rowIdx, animation_duration ) {
 		let dataState;
 	
-		const arrWordState = setWordState( rowIdx );
-		
+		const arrWordState = getWordState( rowIdx );
+
+		wordState[rowIdx] = arrWordState;
+
 		for ( let i = 0; i < arrWordState.length; i++ ) {
 			const card = document.getElementById( `card${rowIdx}${i}` );
 	
@@ -380,7 +459,7 @@ function revealWord( rowIdx, guess, animation_duration ) {
 						dataState = 'absent';
 					break;
 				}
-	
+				
 				card.setAttribute( 'data-state', dataState );
 			}, ( ( i + 1 ) * animation_duration ) / 2 );
 	
@@ -388,7 +467,7 @@ function revealWord( rowIdx, guess, animation_duration ) {
 			card.style.animationDelay = `${ ( i * animation_duration ) / 2 }ms`;
 		}
 	
-		function setWordState( rowIdx ) {
+		function getWordState( rowIdx ) {
 			const arrS = [ ...wordle.getWordle( state.game.secret ) ];
 			const arrI = [ ...state.game.grid[rowIdx] ];
 			const arrF = Array( boardLength.wordLen ).fill( '' );
@@ -432,6 +511,8 @@ function updateRow( rowIdx, guess ) {
 		if ( !state.game.isFin ) {
 			state.game.isInputable = true;
 		}
+
+		updateKeyboard();
 		
 		if ( !e.target.classList.contains( 'win' ) ) {
 			if ( state.game.isWinner || state.game.isGameOver ) {
@@ -460,6 +541,38 @@ function updateRow( rowIdx, guess ) {
 		state.game.currColIdx = 0;
 	
 		ls.setItem( state );
+	}
+	
+	function updateKeyboard() {
+		let dataState;
+
+		for ( let i = 0; i < wordState.length; i++ ) {
+			for ( let j = 0; j < boardLength.wordLen; j++ ) {
+				switch ( wordState[i][j] ) {
+					case 'c':
+						dataState = 'correct';
+					break;
+					case 'p':
+						dataState = 'present';
+					break;
+					case 'a':
+						dataState = 'absent';
+					break;
+				}
+
+				if ( state.game.grid[i][j] ) {
+					const button = document.querySelector( `.keyboard .key[data-key=${state.game.grid[i][j]}]` );
+					const orgDataState = button.getAttribute( 'data-state' );
+					
+					if ( 'correct' === orgDataState ) {
+						continue;
+					}
+
+					button.setAttribute( 'data-state', dataState );
+				}
+				
+			}
+		}
 	}
 
 	function drawFinish() {

@@ -1,6 +1,6 @@
 'use strict'
 
-import { secret, state, initState, resetState, setCardStatus, updateGrid } from "./index.js";
+import { secret, state, initState, keyboardButtons, resetState, setCardStatus, updateGrid } from "./index.js";
 
 console.log( '[Load dialog.js]' );
 
@@ -119,6 +119,10 @@ function addHandlerDialogStats() {
 			contentWelcome.style = 'display: block';
 	
 			toast.removeToastAll();
+
+			for ( const [key, button] of keyboardButtons ) {
+				button.removeAttribute( 'data-state' );
+			}
 		}
 	}
 	
@@ -170,6 +174,10 @@ function addHandlerDialogStats() {
 					document.getElementById( 'startup' ).click( e );
 		
 					toast.removeToastAll();
+
+					for ( const [key, button] of keyboardButtons ) {
+						button.removeAttribute( 'data-state' );
+					}
 				};
 			}
 		}
