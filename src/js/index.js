@@ -112,34 +112,34 @@ function addHandlerStart() {
 		}
 
 		state.game.isInputable = true;
+
+		function initBoard() {
+			board = new Board();
+		
+			board.drawGrid();
+			board.setPrevWords();
+		
+			idxTimer = Timer( '#stopwatch', {
+					startTime: state.game.timestamps.firstPlayed
+					, endTime: state.game.timestamps.lastCompleted
+				} );
+		}
+
+		function setSecret() {
+			let secret = location.search.replace( '?', '' );
+			// let word = wordle.getWordle( secret );
+		
+			if ( '' === secret ) {
+				secret = wordle.setWordle();
+				// word = wordle.getWordle( secret );
+			}
+		
+			state.game.secret = secret;
+			// console.log( word );
+		
+			ls.setItem( state );
+		}
 	} );
-}
-
-function setSecret() {
-	let secret = location.search.replace( '?', '' );
-	// let word = wordle.getWordle( secret );
-
-	if ( '' === secret ) {
-		secret = wordle.setWordle();
-		// word = wordle.getWordle( secret );
-	}
-
-	state.game.secret = secret;
-	// console.log( word );
-
-	ls.setItem( state );
-}
-
-function initBoard() {
-	board = new Board();
-
-	board.drawGrid();
-	board.setPrevWords();
-
-	idxTimer = Timer( '#stopwatch', {
-			startTime: state.game.timestamps.firstPlayed
-			, endTime: state.game.timestamps.lastCompleted
-		} );
 }
 
 const Board = function() {
@@ -262,6 +262,53 @@ function addHandlerKeyboard() {
 
 		updateGrid();
 	}
+
+	function isWordValid( word ) {
+		if ( !diagNewWordle.open && state.game.isFin ) {
+			return true;
+		}
+	
+		return new Promise( ( resolve, reject ) => {
+			Dictionary( word )
+				.then( ( resp ) => {
+					resolve( ( 0 !== resp.length ) );
+				} )
+				.catch( ( err ) => {
+					reject( false );
+				} );
+		} );
+	}
+
+	function removeLetter() {
+		const whichState = ( diagNewWordle.open ) ? secret : state;
+	
+		if ( 0 === whichState.game.currColIdx ) {
+			return;
+		}
+		
+		whichState.game.currColIdx--;
+		whichState.game.grid[ whichState.game.currRowIdx ][ ( whichState.game.currColIdx ) ] = '';
+	
+		setCardStatus( 'remove', whichState.game.currRowIdx, whichState.game.currColIdx );
+	}
+
+	function isLetter( key ) {
+		return ( 1 === key.length ) && key.match( /[a-z]/i );	// /^[a-z]$/ : only lowercase
+	}
+	
+	function addLetter( letter ) {
+		const whichState = ( diagNewWordle.open ) ? secret : state;
+	
+		if ( boardLength.wordLen === whichState.game.currColIdx ) {
+			return;
+		}
+	
+		whichState.game.grid[ whichState.game.currRowIdx ][ whichState.game.currColIdx ] = letter;
+	
+		setCardStatus( 'add', whichState.game.currRowIdx, whichState.game.currColIdx );
+	
+		whichState.game.currColIdx++;
+	}
 }
 
 function getWord( rowIdx ) {
@@ -269,22 +316,6 @@ function getWord( rowIdx ) {
 
 	// return whichState.game.grid[rowIdx].reduce( ( prev, curr ) => prev + curr );
 	return whichState.game.grid[rowIdx].join( '' );
-}
-
-function isWordValid( word ) {
-	if ( !diagNewWordle.open && state.game.isFin ) {
-		return true;
-	}
-
-	return new Promise( ( resolve, reject ) => {
-		Dictionary( word )
-			.then( ( resp ) => {
-				resolve( ( 0 !== resp.length ) );
-			} )
-			.catch( ( err ) => {
-				reject( false );
-			} );
-	} );
 }
 
 function rejectWord( textContent, row ) {
@@ -302,6 +333,68 @@ function revealWord( rowIdx, guess, animation_duration ) {
 	updateRow( rowIdx, guess );
 
 	flipRow( rowIdx, animation_duration );
+
+	function flipRow( rowIdx, animation_duration ) {
+		let dataState;
+	
+		const arrWordState = setWordState( rowIdx );
+		
+		for ( let i = 0; i < arrWordState.length; i++ ) {
+			const card = document.getElementById( `card${rowIdx}${i}` );
+	
+			setTimeout( () => {
+				switch ( arrWordState[i] ) {
+					case 'c':
+						dataState = 'correct';
+					break;
+					case 'p':
+						dataState = 'present';
+					break;
+					case 'a':
+						dataState = 'absent';
+					break;
+				}
+	
+				card.setAttribute( 'data-state', dataState );
+			}, ( ( i + 1 ) * animation_duration ) / 2 );
+	
+			card.classList.add( 'flipped' );
+			card.style.animationDelay = `${ ( i * animation_duration ) / 2 }ms`;
+		}
+	
+		function setWordState( rowIdx ) {
+			const arrS = [ ...wordle.getWordle( state.game.secret ) ];
+			const arrI = [ ...state.game.grid[rowIdx] ];
+			const arrF = Array( boardLength.wordLen ).fill( '' );
+
+			const arrIdxC = 
+				arrS
+					.map( ( v, i ) => { return { idx: i, val: v } } )
+					.filter( ( v, i ) => { return v.val === arrI[i]; } )
+					.map( x => x.idx )
+				;
+			arrIdxC.forEach( ( v ) => { arrS[v] = '.'; arrI[v] = '.'; arrF[v] = 'c'; } );
+			
+			let arrIdxA =
+				arrI
+					.map( ( v, i ) => { return { idx: i, val: v } } )
+					.filter( ( v, i ) => { return ( '.' !== v.val ) && -1 < arrS.join( '' ).indexOf( arrI[i] ); } )
+				;
+			
+			if ( 0 < arrIdxA.length ) {
+				arrIdxA = _.uniqBy( arrIdxA, 'val' );
+			}
+
+			arrIdxA.forEach( ( v ) => {
+				arrS[ arrS.join( '' ).indexOf( v.val ) ] = '!';
+				arrI[v.idx] = '!'; arrF[v.idx] = 'p';
+			} );
+
+			arrF.forEach( ( v, i ) => { if ( '' === v ) { arrF[i] = 'a'; } } );
+
+			return arrF;
+		}
+	}
 }
 
 function updateRow( rowIdx, guess ) {
@@ -320,147 +413,84 @@ function updateRow( rowIdx, guess ) {
 			}
 		}
 	} );
-}
 
-function updateGameState( rowIdx, guess ) {
-	state.game.isWinner = ( wordle.getWordle( state.game.secret ) === guess );
-	state.game.wonRowIdx = ( state.game.isWinner ) ? ( rowIdx ) : 0;
-	state.game.isGameOver = ( ( boardLength.maxRowLen - 1 ) === rowIdx );
-
-	if ( !state.game.isFin ) {
-		state.game.timestamps.lastPlayed = Date.now();
-
-		if ( state.game.isWinner || state.game.isGameOver ) {
-			idxTimer.stop();
-
-			state.game.isFin = true;
-			state.game.timestamps.lastCompleted = state.game.timestamps.lastPlayed;
-		}
-	}
-
-	state.game.currRowIdx++;
-	state.game.currColIdx = 0;
-
-	ls.setItem( state );
-}
-
-function flipRow( rowIdx, animation_duration ) {
-	let dataState;
-
-	// for ( let i = 0; i < boardLength ) {
-	// 	for () {
-
-	// 	}
-	// }
-
-	console.log( wordle.getWordle( state.game.secret ) );
+	function updateGameState( rowIdx, guess ) {
+		state.game.isWinner = ( wordle.getWordle( state.game.secret ) === guess );
+		state.game.wonRowIdx = ( state.game.isWinner ) ? ( rowIdx ) : 0;
+		state.game.isGameOver = ( ( boardLength.maxRowLen - 1 ) === rowIdx );
 	
-	for ( let i = 0; i < boardLength.wordLen; i++ ) {
-		const card = document.getElementById( `card${rowIdx}${i}` );
-		const letter = card.textContent;
-
-		setTimeout( () => {
-			if ( wordle.getWordle( state.game.secret )[i] === letter ) {
-				dataState = 'correct';
-			} else if ( wordle.getWordle( state.game.secret ).includes( letter ) ) {
-				dataState = 'present';
-			} else {
-				dataState = 'absent';
+		if ( !state.game.isFin ) {
+			state.game.timestamps.lastPlayed = Date.now();
+	
+			if ( state.game.isWinner || state.game.isGameOver ) {
+				idxTimer.stop();
+	
+				state.game.isFin = true;
+				state.game.timestamps.lastCompleted = state.game.timestamps.lastPlayed;
 			}
-
-			card.setAttribute( 'data-state', dataState );
-		}, ( ( i + 1 ) * animation_duration ) / 2 );
-
-		card.classList.add( 'flipped' );
-		card.style.animationDelay = `${ ( i * animation_duration ) / 2 }ms`;
-	}
-}
-
-function drawFinish() {
-	let textFin;
-
-	if ( state.game.isWinner && !state.stats.hasPlayed ) {
-		const winRow = document.getElementById( `row${state.game.wonRowIdx}` );
-
-		winRow.childNodes.forEach( ( e ) => {
-			const rowIdx = e.id.replace( `card${state.game.wonRowIdx}`, '' );
-
-			e.style.animationDelay = `${ ( rowIdx * 100 ) }ms`;
-
-			e.classList.remove( 'flipped' );
-			e.classList.add( 'win' );
-		} );
-
-		textFin = 'Congratulations!';
-	} else if ( state.game.isGameOver ) {
-		textFin = `${state.game.secret}`;
+		}
+	
+		state.game.currRowIdx++;
+		state.game.currColIdx = 0;
+	
+		ls.setItem( state );
 	}
 
-	if ( state.game.isWinner || state.game.isGameOver ) {
-		if ( !state.stats.hasPlayed ) {
-			state.game.isInputable = false;
-			
-			toast.showToast( '', textFin, 0 );
-
-			updateStatsState();
+	function drawFinish() {
+		let textFin;
+	
+		if ( state.game.isWinner && !state.stats.hasPlayed ) {
+			const winRow = document.getElementById( `row${state.game.wonRowIdx}` );
+	
+			winRow.childNodes.forEach( ( e ) => {
+				const rowIdx = e.id.replace( `card${state.game.wonRowIdx}`, '' );
+	
+				e.style.animationDelay = `${ ( rowIdx * 100 ) }ms`;
+	
+				e.classList.remove( 'flipped' );
+				e.classList.add( 'win' );
+			} );
+	
+			textFin = 'Congratulations!';
+		} else if ( state.game.isGameOver ) {
+			textFin = `${state.game.secret}`;
+		}
+	
+		if ( state.game.isWinner || state.game.isGameOver ) {
+			if ( !state.stats.hasPlayed ) {
+				state.game.isInputable = false;
+				
+				toast.showToast( '', textFin, 0 );
+	
+				updateStatsState();
+			}
+	
+			document.getElementById( 'statistics-button' ).click();
 		}
 
-		document.getElementById( 'statistics-button' ).click();
+		function updateStatsState() {
+			const stats = state.stats;
+		
+			stats.hasPlayed = true;
+		
+			stats.gamesPlayed++;
+			
+			stats.gamesWon = ( state.game.isWinner ) ? ( stats.gamesWon + 1 ) : stats.gamesWon;
+			stats.winRate = ( ( stats.gamesWon / stats.gamesPlayed ) * 100 ).toFixed( 2 );
+		
+			if ( state.game.isWinner ) {
+				stats.guesses[( state.game.wonRowIdx + 1 )]++;
+			} else if ( state.game.isGameOver ) {
+				stats.guesses['fail']++;
+			}
+		
+			stats.isOnStreak = state.game.isWinner;
+			stats.currentStreak = ( stats.isOnStreak ) ? ( stats.currentStreak + 1 ) : 0;
+			stats.maxStreak = ( stats.currentStreak > stats.maxStreak ) ? stats.currentStreak : stats.maxStreak;
+			
+			ls.setItem( state );
+		}
 	}
-}
-
-function updateStatsState() {
-	const stats = state.stats;
-
-	stats.hasPlayed = true;
-
-	stats.gamesPlayed++;
-	
-	stats.gamesWon = ( state.game.isWinner ) ? ( stats.gamesWon + 1 ) : stats.gamesWon;
-	stats.winRate = ( ( stats.gamesWon / stats.gamesPlayed ) * 100 ).toFixed( 2 );
-
-	if ( state.game.isWinner ) {
-		stats.guesses[( state.game.wonRowIdx + 1 )]++;
-	} else if ( state.game.isGameOver ) {
-		stats.guesses['fail']++;
-	}
-
-	stats.isOnStreak = state.game.isWinner;
-	stats.currentStreak = ( stats.isOnStreak ) ? ( stats.currentStreak + 1 ) : 0;
-	stats.maxStreak = ( stats.currentStreak > stats.maxStreak ) ? stats.currentStreak : stats.maxStreak;
-	
-	ls.setItem( state );
-}
-
-function removeLetter() {
-	const whichState = ( diagNewWordle.open ) ? secret : state;
-
-	if ( 0 === whichState.game.currColIdx ) {
-		return;
-	}
-	
-	whichState.game.currColIdx--;
-	whichState.game.grid[ whichState.game.currRowIdx ][ ( whichState.game.currColIdx ) ] = '';
-
-	setCardStatus( 'remove', whichState.game.currRowIdx, whichState.game.currColIdx );
-}
-
-function isLetter( key ) {
-	return ( 1 === key.length ) && key.match( /[a-z]/i );	// /^[a-z]$/ : only lowercase
-}
-
-function addLetter( letter ) {
-	const whichState = ( diagNewWordle.open ) ? secret : state;
-
-	if ( boardLength.wordLen === whichState.game.currColIdx ) {
-		return;
-	}
-
-	whichState.game.grid[ whichState.game.currRowIdx ][ whichState.game.currColIdx ] = letter;
-
-	setCardStatus( 'add', whichState.game.currRowIdx, whichState.game.currColIdx );
-
-	whichState.game.currColIdx++;
 }
 
 export function setCardStatus( status, row, col ) {
